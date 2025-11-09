@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subhankar's Voice Interview Bot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .status.ready {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.listening {
+            background: #fff3cd;
+            color: #856404;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status.processing {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status.speaking {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background: #667eea;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message.bot {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .message .label {
+            font-weight: bold;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .mic-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .instructions {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .instructions h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            list-style-position: inside;
+            color: #555;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            max-width: 80px;
+            margin-bottom: 15px;
+        }
+
+        .typing-indicator.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .typing-indicator span {
+            height: 10px;
+            width: 10px;
+            background: #666;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .chat-container {
+                height: 300px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎙️ Subhankar's Voice Interview Bot</h1>
+            <p>AI Agent Team Interview - 100x</p>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Use:</h3>
+            <ul>
+                <li>Click "Start Voice Interview" to begin speaking</li>
+                <li>Ask any interview question (or type it below)</li>
+                <li>The bot will respond as Subhankar Saha</li>
+                <li>Click "Stop Listening" when you're done speaking</li>
+            </ul>
+        </div>
+
+        <div id="status" class="status ready">
+            Ready to start - Click "Start Voice Interview"
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="message bot">
+                <div class="label">Subhankar:</div>
+                <div>Hello! I'm Subhankar Saha, Machine Learning Engineer at Aersense. I'm excited to interview for the AI Agent Team position at 100x. Feel free to ask me anything about my background, skills, or experience!</div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn btn-primary">
+                <svg class="mic-icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a4 4 0 00-8 0v4a4 4 0 008 0V5z"/>
+                </svg>
+                Start Voice Interview
+            </button>
+            <button id="stopBtn" class="btn btn-secondary" style="display:none;">
+                Stop Listening
+            </button>
+            <button id="resetBtn" class="btn btn-danger">
+                Reset Chat
+            </button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <input type="text" id="textInput" placeholder="Or type your question here..." 
+                   style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+            <button id="sendBtn" class="btn btn-primary" style="margin-top: 10px; width: 100%;">
+                Send Message
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Check for browser support
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const speechSynthesis = window.speechSynthesis;
+
+        let recognition = null;
+        let isListening = false;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+        }
+
+        // DOM elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const textInput = document.getElementById('textInput');
+        const chatContainer = document.getElementById('chatContainer');
+        const statusDiv = document.getElementById('status');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Update status
+        function updateStatus(message, className) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${className}`;
+        }
+
+        // Add message to chat
+        function addMessage(text, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.textContent = isUser ? 'You:' : 'Subhankar:';
+            
+            const content = document.createElement('div');
+            content.textContent = text;
+            
+            messageDiv.appendChild(label);
+            messageDiv.appendChild(content);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Show typing indicator
+        function showTyping(show) {
+            typingIndicator.classList.toggle('active', show);
+            if (show) {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+
+        // Send message to backend
+        async function sendMessage(message) {
+            if (!message.trim()) return;
+
+            addMessage(message, true);
+            updateStatus('Processing your question...', 'processing');
+            showTyping(true);
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                showTyping(false);
+
+                if (data.success) {
+                    addMessage(data.response, false);
+                    updateStatus('Ready for next question', 'ready');
+                    
+                    // Speak the response
+                    speakText(data.response);
+                } else {
+                    updateStatus('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showTyping(false);
+                updateStatus('Error connecting to server', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Text-to-speech
+        function speakText(text) {
+            if (speechSynthesis) {
+                // Cancel any ongoing speech
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                utterance.onstart = () => {
+                    updateStatus('Speaking...', 'speaking');
+                };
+                
+                utterance.onend = () => {
+                    updateStatus('Ready for next question', 'ready');
+                };
+                
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Start voice recognition
+        startBtn.addEventListener('click', () => {
+            if (!recognition) {
+                alert('Speech recognition is not supported in your browser. Please use Chrome or Edge, or type your question instead.');
+                return;
+            }
+
+            isListening = true;
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-flex';
+            updateStatus('Listening... Speak your question now', 'listening');
+            
+            recognition.start();
+        });
+
+        // Stop voice recognition
+        stopBtn.addEventListener('click', () => {
+            if (recognition && isListening) {
+                recognition.stop();
+            }
+        });
+
+        // Handle speech recognition results
+        if (recognition) {
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                sendMessage(transcript);
+                
+                isListening = false;
+                startBtn.style.display = 'inline-flex';
+                stopBtn.style.display = 'none';
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                updateStatus('Error: ' + event.error, 'error');
+                
+                isListening = false;
+                startBtn.style.display = 'inline-flex';
+                stopBtn.style.display = 'none';
+            };
+
+            recognition.onend = () => {
+                if (isListening) {
+                    isListening = false;
+                    startBtn.style.display = 'inline-flex';
+                    stopBtn.style.display = 'none';
+                }
+            };
+        }
+
+        // Send text message
+        sendBtn.addEventListener('click', () => {
+            const message = textInput.value;
+            if (message.trim()) {
+                sendMessage(message);
+                textInput.value = '';
+            }
+        });
+
+        // Send on Enter key
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendBtn.click();
+            }
+        });
+
+        // Reset conversation
+        resetBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to reset the conversation?')) {
+                try {
+                    await fetch('/reset', { method: 'POST' });
+                    chatContainer.innerHTML = `
+                        <div class="message bot">
+                            <div class="label">Subhankar:</div>
+                            <div>Hello! I'm Subhankar Saha, Machine Learning Engineer at Aersense. I'm excited to interview for the AI Agent Team position at 100x. Feel free to ask me anything about my background, skills, or experience!</div>
+                        </div>
+                    `;
+                    updateStatus('Conversation reset - Ready to start', 'ready');
+                    speechSynthesis.cancel();
+                } catch (error) {
+                    console.error('Error resetting:', error);
+                }
+            }
+        });
+
+        // Check health on load
+        fetch('/health')
+            .then(r => r.json())
+            .then(data => {
+                if (!data.api_configured) {
+                    updateStatus('Warning: API key not configured', 'error');
+                }
+            })
+            .catch(err => console.error('Health check failed:', err));
+    </script>
+</body>
+</html>
